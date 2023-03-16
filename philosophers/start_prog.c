@@ -1,0 +1,72 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   start_prog.c                                       :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: fakayumo <fakayumo@student.42abudhabi.a    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2023/03/15 23:26:11 by fakayumo          #+#    #+#             */
+/*   Updated: 2023/03/15 23:26:14 by fakayumo         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "philo.h"
+
+void	*pthread(void *philo)
+{
+	t_philo	*phil;
+
+	phil = (t_philo *)philo;
+	if (phil->id % 2)
+		usleep(2000);
+	while (!ft_check_died(phil))
+	{
+		if (phil->info->eat)
+			break ;
+		philo_eat(phil);
+		print(phil, phil->id, "is sleeping");
+		philo_pause(phil, phil->info->time_to_sleep);
+		print(phil, phil->id, "is thinking");
+	}
+	return (NULL);
+}
+
+void	philo_pause(t_philo *philo, int time_pause)
+{
+	long long	time;
+
+	time = get_time();
+	while (!ft_check_died(philo))
+	{
+		if (get_time() - time >= time_pause)
+			break ;
+		usleep(500);
+	}
+}
+
+int	start(t_philo *phil)
+{
+	int	i;
+
+	i = 0;
+	phil->info->start_time = get_time();
+	while (i < phil->info->num_philo)
+	{
+		if (pthread_create(&(phil[i].philo_t), NULL,
+				pthread, &(phil[i])))
+			return (1);
+		++i;
+	}
+	check_done_eat_and_die(phil);
+	i = 0;
+	while (i < phil->info->num_philo)
+		pthread_join(phil[i++].philo_t, NULL);
+	i = 0;
+	while (i < phil->info->num_philo)
+		pthread_mutex_destroy(&(phil->info->fork[i++]));
+	pthread_mutex_destroy(&(phil->info->printig));
+	pthread_mutex_destroy(&(phil->info->eating));
+	pthread_mutex_destroy(&(phil->info->die));
+	pthread_mutex_destroy(&(phil->info->count_eat));
+	return (0);
+}
